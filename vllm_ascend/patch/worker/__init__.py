@@ -15,12 +15,18 @@
 # limitations under the License.
 #
 
+from vllm import envs as envs_vllm
 from vllm.triton_utils import HAS_TRITON
 
 from vllm_ascend.utils import is_310p, vllm_version_is
 
-# v2 model runner patches depend on upstream main APIs beyond v0.21.0.
+# Main-only V2 features remain disabled on vLLM 0.21.0.
 _V2_MODEL_RUNNER_SUPPORTED = not vllm_version_is("0.21.0")
+# The eager V2 compatibility patches below are also valid for an explicitly
+# requested vLLM 0.21.0 V2 runner.
+_V2_CORE_PATCHES_ENABLED = (
+    _V2_MODEL_RUNNER_SUPPORTED or envs_vllm.VLLM_USE_V2_MODEL_RUNNER
+)
 
 if HAS_TRITON:
     import vllm_ascend.patch.worker.patch_triton
@@ -58,12 +64,13 @@ import vllm_ascend.patch.worker.patch_cudagraph  # noqa
 import vllm_ascend.patch.worker.patch_deepseek_mtp  # noqa
 import vllm_ascend.patch.worker.patch_gqa_c8  # noqa
 
-if _V2_MODEL_RUNNER_SUPPORTED:
+if _V2_CORE_PATCHES_ENABLED:
     import vllm_ascend.patch.worker.patch_v2.patch_uva  # noqa
     import vllm_ascend.patch.worker.patch_v2.patch_input_batch  # noqa
     import vllm_ascend.patch.worker.patch_v2.patch_model_state  # noqa
     import vllm_ascend.patch.worker.patch_v2.patch_block_table  # noqa
     import vllm_ascend.patch.worker.patch_v2.patch_attn_utils  # noqa
+    import vllm_ascend.patch.worker.patch_v2.patch_sampler  # noqa
 
 # only patch routed experts capture in main2main.
 if _V2_MODEL_RUNNER_SUPPORTED:
